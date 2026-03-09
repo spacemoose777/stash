@@ -1,0 +1,27 @@
+name: Generate TTS Audio
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Every 30 minutes
+  workflow_dispatch:         # Allow manual trigger
+
+jobs:
+  tts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install edge-tts requests
+
+      - name: Run TTS generator
+        run: python tts/tts.py --once

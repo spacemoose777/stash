@@ -28,9 +28,9 @@ except ImportError:
     sys.exit(1)
 
 # Configuration - UPDATE THESE VALUES
-SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"
-SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"
-USER_ID = "YOUR_USER_ID"
+SUPABASE_URL = "https://fczfjrgxytiwpokdklxm.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjemZqcmd4eXRpd3Bva2RrbHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzA3NzcsImV4cCI6MjA4ODY0Njc3N30.Ag65xJZKYqC8FCG160f--Yx02BSl51sOPF-o6l0kAUo"
+USER_ID = "7dfa5d6e-040d-4494-89dc-d4a807568cec"
 CHECK_INTERVAL = 120  # seconds between checks
 LOG_FILE = Path(__file__).parent / "tts.log"
 

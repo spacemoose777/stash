@@ -238,7 +238,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Stash <digest@yourdomain.com>", // User must configure this in Resend
+            from: "Stash <stash@resend.doittoit.app>",
             to: user.digest_email,
             subject: `Your Stash Weekly Digest - ${weekEnd}`,
             html: htmlContent,

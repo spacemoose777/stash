@@ -14,6 +14,9 @@ class StashApp {
     this.audio = null;
     this.isPlaying = false;
 
+    // Offline / IndexedDB
+    this.db = null;
+
     this.init();
   }
 
@@ -24,14 +27,74 @@ class StashApp {
       CONFIG.SUPABASE_ANON_KEY
     );
 
+    // Initialize IndexedDB for offline support
+    await this.initDB();
+
     // Load theme preference
     this.loadTheme();
+
+    // Show offline banner if needed
+    this.updateOfflineStatus();
 
     // Skip auth - go straight to main screen
     this.showMainScreen();
     this.loadData();
 
     this.bindEvents();
+  }
+
+  // ── IndexedDB ────────────────────────────────────────────────
+
+  initDB() {
+    return new Promise((resolve) => {
+      const request = indexedDB.open('stash-offline', 1);
+
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        ['saves', 'tags', 'folders'].forEach(store => {
+          if (!db.objectStoreNames.contains(store)) {
+            db.createObjectStore(store, { keyPath: 'id' });
+          }
+        });
+      };
+
+      request.onsuccess = (e) => {
+        this.db = e.target.result;
+        resolve();
+      };
+
+      request.onerror = () => resolve(); // Fail silently
+    });
+  }
+
+  cacheData(storeName, rows) {
+    if (!this.db || !rows?.length) return;
+    const tx = this.db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    store.clear();
+    rows.forEach(row => store.put(row));
+  }
+
+  getCachedData(storeName) {
+    return new Promise((resolve) => {
+      if (!this.db) return resolve([]);
+      const tx = this.db.transaction(storeName, 'readonly');
+      const request = tx.objectStore(storeName).getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => resolve([]);
+    });
+  }
+
+  // ── Offline status ───────────────────────────────────────────
+
+  updateOfflineStatus() {
+    const banner = document.getElementById('offline-banner');
+    if (!banner) return;
+    if (navigator.onLine) {
+      banner.classList.add('hidden');
+    } else {
+      banner.classList.remove('hidden');
+    }
   }
 
   // Theme Management
@@ -66,6 +129,13 @@ class StashApp {
   }
 
   bindEvents() {
+    // Online/offline detection
+    window.addEventListener('online', () => {
+      this.updateOfflineStatus();
+      this.loadData(); // Refresh from network when back online
+    });
+    window.addEventListener('offline', () => this.updateOfflineStatus());
+
     // Auth form
     document.getElementById('auth-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -381,12 +451,19 @@ class StashApp {
 
     loading.classList.add('hidden');
 
-    if (error) {
-      console.error('Error loading saves:', error);
-      return;
+    if (error || !data) {
+      if (!navigator.onLine) {
+        // Offline: serve from IndexedDB
+        const cached = await this.getCachedData('saves');
+        this.saves = this.filterCachedSaves(cached);
+      } else {
+        console.error('Error loading saves:', error);
+        return;
+      }
+    } else {
+      this.saves = data;
+      this.cacheData('saves', data); // Keep cache fresh
     }
-
-    this.saves = data || [];
 
     if (this.saves.length === 0) {
       empty.classList.remove('hidden');
@@ -399,6 +476,18 @@ class StashApp {
         this.renderSaves();
       }
     }
+  }
+
+  filterCachedSaves(saves) {
+    if (this.currentView === 'highlights') return saves.filter(s => s.highlight);
+    if (this.currentView === 'articles') return saves.filter(s => !s.highlight);
+    if (this.currentView === 'archived') return saves.filter(s => s.is_archived);
+    if (this.currentView === 'weekly') {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return saves.filter(s => new Date(s.created_at) >= weekAgo);
+    }
+    return saves.filter(s => !s.is_archived);
   }
 
   renderSaves() {
@@ -612,7 +701,12 @@ class StashApp {
       .select('*')
       .order('name');
 
-    this.tags = data || [];
+    if (data) {
+      this.tags = data;
+      this.cacheData('tags', data);
+    } else {
+      this.tags = await this.getCachedData('tags');
+    }
     this.renderTags();
   }
 
@@ -635,7 +729,12 @@ class StashApp {
       .select('*')
       .order('name');
 
-    this.folders = data || [];
+    if (data) {
+      this.folders = data;
+      this.cacheData('folders', data);
+    } else {
+      this.folders = await this.getCachedData('folders');
+    }
     this.renderFolders();
   }
 

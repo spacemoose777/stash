@@ -2017,3 +2017,19 @@ input, select {
     font-size: 24px;
   }
 }
+
+/* Offline Banner */
+.offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.offline-banner.hidden {
+  display: none;
+}
