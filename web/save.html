@@ -6,6 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Quick Save - Stash</title>
+  <script>(function(){const t=localStorage.getItem("stash-theme");if(t)document.documentElement.setAttribute("data-theme",t);})();</script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -91,6 +92,12 @@
       text-align: center;
       margin-top: 24px;
     }
+
+    [data-theme='dark'] body { background: #1a1a2e; color: #e5e7eb; }
+    [data-theme='dark'] input,
+    [data-theme='dark'] textarea { background: #2d2d44; border-color: #4b4b6b; color: #e5e7eb; }
+    [data-theme='dark'] .hint { color: #9ca3af; }
+    [data-theme='dark'] .back-link a { color: #818cf8; }
   </style>
 </head>
 <body>
@@ -104,7 +111,7 @@
     </form>
     <div class="status" id="status"></div>
     <div class="back-link" id="back-link">
-        <a href="/">← Back to Stash</a>
+        <a href="#" onclick="event.preventDefault();window.location.replace('/?from=save');">← Back to Stash</a>
       </div>
       <p class="hint">Add to Home Screen for quick access</p>
   </div>

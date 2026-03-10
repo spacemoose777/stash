@@ -1,11 +1,10 @@
-// Vercel serverless function: fetch a URL, extract metadata, save to Supabase
+// Vercel serverless function: fetch a URL, extract metadata + content, save to Supabase
 
 const SUPABASE_URL = 'https://fczfjrgxytiwpokdklxm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjemZqcmd4eXRpd3Bva2RrbHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzA3NzcsImV4cCI6MjA4ODY0Njc3N30.Ag65xJZKYqC8FCG160f--Yx02BSl51sOPF-o6l0kAUo';
 const USER_ID = '7dfa5d6e-040d-4494-89dc-d4a807568cec';
 
 function getMeta(html, property) {
-  // Match og:, name=, and property= variants
   const patterns = [
     new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`, 'i'),
     new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`, 'i'),
@@ -31,7 +30,48 @@ function decodeEntities(str) {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ');
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n));
+}
+
+function extractContent(html) {
+  // Remove everything we don't want to read
+  let body = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, '')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<header[\s\S]*?<\/header>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+    .replace(/<aside[\s\S]*?<\/aside>/gi, '')
+    .replace(/<figure[\s\S]*?<\/figure>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+
+  // Prefer <article> or <main> if present
+  const articleMatch = body.match(/<article[\s\S]*?<\/article>/i) ||
+                       body.match(/<main[\s\S]*?<\/main>/i);
+  if (articleMatch) body = articleMatch[0];
+
+  // Convert block elements to newlines before stripping tags
+  body = body
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<\/blockquote>/gi, '\n\n');
+
+  // Strip all remaining tags
+  body = body.replace(/<[^>]+>/g, '');
+
+  // Decode entities and clean whitespace
+  body = decodeEntities(body)
+    .replace(/\t/g, ' ')
+    .replace(/ {2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  // Limit to ~50,000 chars (plenty for any article)
+  return body.length > 50000 ? body.slice(0, 50000) + '…' : body;
 }
 
 export default async function handler(req, res) {
@@ -47,6 +87,7 @@ export default async function handler(req, res) {
 
   let title = manualTitle || '';
   let excerpt = null;
+  let content = null;
   let image_url = null;
   let site_name = null;
   let author = null;
@@ -87,23 +128,25 @@ export default async function handler(req, res) {
         getMeta(html, 'article:modified_time');
       if (pubTime) published_at = pubTime;
 
-      // Decode HTML entities
+      // Extract full article content
+      content = extractContent(html);
+
+      // Decode entities in metadata fields
       if (title) title = decodeEntities(title);
       if (excerpt) excerpt = decodeEntities(excerpt);
       if (site_name) site_name = decodeEntities(site_name);
     }
   } catch (e) {
-    // Fetch failed (timeout, CORS, etc) — save with just the URL
     title = title || new URL(url).hostname;
     site_name = new URL(url).hostname.replace('www.', '');
   }
 
-  // Save to Supabase
   const save = {
     user_id: USER_ID,
     url,
     title,
     excerpt: excerpt || null,
+    content: content || null,
     image_url: image_url || null,
     site_name: site_name || null,
     author: author || null,
