@@ -778,10 +778,14 @@ input, select {
 }
 
 .reading-body {
-  font-size: 16px;
+  font-size: var(--reading-font-size, 16px);
   line-height: 1.8;
   color: var(--text);
 }
+
+/* Text size variants applied to reading-content */
+.reading-content.text-medium { --reading-font-size: 19px; }
+.reading-content.text-large  { --reading-font-size: 22px; }
 
 .reading-body p {
   margin-bottom: 16px;

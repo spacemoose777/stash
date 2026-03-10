@@ -30,8 +30,9 @@ class StashApp {
     // Initialize IndexedDB for offline support
     await this.initDB();
 
-    // Load theme preference
+    // Load theme and text size preferences
     this.loadTheme();
+    this.loadTextSize();
 
     // Show offline banner if needed
     this.updateOfflineStatus();
@@ -157,6 +158,35 @@ class StashApp {
     }
   }
 
+  // ── Text size ────────────────────────────────────────────────
+
+  loadTextSize() {
+    const size = localStorage.getItem('stash-text-size') || 'small';
+    this.applyTextSize(size);
+  }
+
+  cycleTextSize() {
+    const sizes = ['small', 'medium', 'large'];
+    const current = localStorage.getItem('stash-text-size') || 'small';
+    const next = sizes[(sizes.indexOf(current) + 1) % sizes.length];
+    localStorage.setItem('stash-text-size', next);
+    this.applyTextSize(next);
+  }
+
+  applyTextSize(size) {
+    const content = document.getElementById('reading-content');
+    if (content) {
+      content.classList.remove('text-medium', 'text-large');
+      if (size === 'medium') content.classList.add('text-medium');
+      if (size === 'large') content.classList.add('text-large');
+    }
+    const label = document.getElementById('text-size-label');
+    if (label) {
+      label.textContent = size === 'large' ? 'A' : size === 'medium' ? 'A' : 'A';
+      label.style.fontSize = size === 'large' ? '17px' : size === 'medium' ? '15px' : '13px';
+    }
+  }
+
   bindEvents() {
     // Online/offline detection
     window.addEventListener('online', () => {
@@ -217,6 +247,10 @@ class StashApp {
 
     document.getElementById('delete-btn').addEventListener('click', () => {
       this.deleteSave();
+    });
+
+    document.getElementById('text-size-btn').addEventListener('click', () => {
+      this.cycleTextSize();
     });
 
     document.getElementById('add-tag-btn').addEventListener('click', () => {
