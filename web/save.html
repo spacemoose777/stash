@@ -74,6 +74,17 @@
       background: #fee2e2;
       color: #991b1b;
     }
+    .back-link {
+      display: none;
+      text-align: center;
+      margin-top: 16px;
+    }
+    .back-link a {
+      color: #6366f1;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+    }
     .hint {
       font-size: 13px;
       color: #6b7280;
@@ -92,7 +103,10 @@
       <button type="submit" class="btn" id="save-btn">Save to Stash</button>
     </form>
     <div class="status" id="status"></div>
-    <p class="hint">Add to Home Screen for quick access</p>
+    <div class="back-link" id="back-link">
+        <a href="/">← Back to Stash</a>
+      </div>
+      <p class="hint">Add to Home Screen for quick access</p>
   </div>
 
   <script>
@@ -149,6 +163,7 @@
         }
 
         status.textContent = 'Saved!';
+        document.getElementById('back-link').style.display = 'block';
         status.className = 'status success';
         document.getElementById('url').value = '';
         document.getElementById('title').value = '';
