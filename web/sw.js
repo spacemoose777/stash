@@ -31,6 +31,11 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Skip waiting on demand (belt-and-braces alongside install skipWaiting)
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 // Fetch - Network first, fallback to cache
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests

@@ -41,6 +41,34 @@ class StashApp {
     this.loadData();
 
     this.bindEvents();
+    this.initAutoUpdate();
+  }
+
+  // ── Auto-update ──────────────────────────────────────────────
+
+  initAutoUpdate() {
+    if (!('serviceWorker' in navigator)) return;
+
+    // When a new SW takes control, reload to get fresh assets
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.location.reload();
+    });
+
+    const checkForUpdate = async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.update();
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      } catch { /* offline — ignore */ }
+    };
+
+    // Check immediately on load, then again whenever the tab becomes visible
+    checkForUpdate();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkForUpdate();
+    });
   }
 
   // ── IndexedDB ────────────────────────────────────────────────
