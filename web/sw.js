@@ -1,5 +1,5 @@
 // Stash Service Worker
-const CACHE_NAME = 'stash-v1';
+const CACHE_NAME = 'stash-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -7,9 +7,12 @@ const ASSETS = [
   '/app.js',
   '/config.js',
   '/manifest.json',
+  // CDN scripts the app depends on — must be cached for offline to work
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+  'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
 ];
 
-// Install
+// Install — pre-cache all assets including CDN scripts
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -19,7 +22,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate
+// Activate — clear old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -36,18 +39,20 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-// Fetch - Network first, fallback to cache
+// Fetch — network first, fallback to cache
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // Skip API requests (let them go to network)
-  if (event.request.url.includes('supabase.co')) return;
+  // Skip Supabase API calls — handled by IndexedDB fallback in app.js
+  if (event.request.url.includes('supabase.co/rest') ||
+      event.request.url.includes('supabase.co/storage') ||
+      event.request.url.includes('supabase.co/functions')) return;
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone and cache successful responses
+        // Cache successful responses (covers CDN scripts on first load)
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -57,7 +62,7 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // Fallback to cache
+        // Offline — serve from cache
         return caches.match(event.request);
       })
   );
