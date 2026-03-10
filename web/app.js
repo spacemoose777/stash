@@ -174,16 +174,14 @@ class StashApp {
   }
 
   applyTextSize(size) {
-    const content = document.getElementById('reading-content');
-    if (content) {
-      content.classList.remove('text-medium', 'text-large');
-      if (size === 'medium') content.classList.add('text-medium');
-      if (size === 'large') content.classList.add('text-large');
-    }
+    const fontSizes = { small: '16px', medium: '19px', large: '22px' };
+    const body = document.getElementById('reading-body');
+    if (body) body.style.fontSize = fontSizes[size];
+
     const label = document.getElementById('text-size-label');
     if (label) {
-      label.textContent = size === 'large' ? 'A' : size === 'medium' ? 'A' : 'A';
-      label.style.fontSize = size === 'large' ? '17px' : size === 'medium' ? '15px' : '13px';
+      const labels = { small: 'A', medium: 'A+', large: 'A++' };
+      label.textContent = labels[size];
     }
   }
 
@@ -904,6 +902,8 @@ class StashApp {
     document.getElementById('favorite-btn').classList.toggle('active', save.is_favorite);
 
     pane.classList.remove('hidden');
+    // Re-apply text size (reading-body content was just replaced)
+    this.loadTextSize();
     // Add open class for mobile slide-in animation
     requestAnimationFrame(() => {
       pane.classList.add('open');
