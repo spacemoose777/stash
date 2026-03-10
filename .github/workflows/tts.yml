@@ -21,7 +21,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install edge-tts requests
+        run: pip install -r tts/requirements.txt
 
       - name: Run TTS generator
         run: python tts/tts.py --once
