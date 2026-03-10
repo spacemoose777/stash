@@ -25,3 +25,5 @@ jobs:
 
       - name: Run TTS generator
         run: python tts/tts.py --once
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

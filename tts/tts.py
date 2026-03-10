@@ -27,9 +27,11 @@ except ImportError:
     print("Error: edge-tts not installed. Run: pip install edge-tts")
     sys.exit(1)
 
-# Configuration - UPDATE THESE VALUES
+# Configuration
 SUPABASE_URL = "https://fczfjrgxytiwpokdklxm.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjemZqcmd4eXRpd3Bva2RrbHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzA3NzcsImV4cCI6MjA4ODY0Njc3N30.Ag65xJZKYqC8FCG160f--Yx02BSl51sOPF-o6l0kAUo"
+# Service role key used for storage uploads (bypasses RLS) — set via env var
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", SUPABASE_KEY)
 USER_ID = "7dfa5d6e-040d-4494-89dc-d4a807568cec"
 CHECK_INTERVAL = 120  # seconds between checks
 LOG_FILE = Path(__file__).parent / "tts.log"
@@ -153,11 +155,11 @@ def upload_to_supabase_storage(file_path, save_id):
     with open(file_path, "rb") as f:
         file_data = f.read()
 
-    # Upload to Supabase Storage
+    # Upload to Supabase Storage using service role key to bypass RLS
     url = f"{SUPABASE_URL}/storage/v1/object/{STORAGE_BUCKET}/{filename}"
     headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
         "Content-Type": "audio/mpeg",
         "x-upsert": "true"  # Overwrite if exists
     }
