@@ -913,16 +913,8 @@ class StashApp {
   async initAudio(url) {
     this.stopAudio();
 
-    // Extract filename from URL and get a signed URL
-    const filename = url.split('/').pop();
-    const signedUrl = await this.getSignedAudioUrl(filename);
-
-    if (!signedUrl) {
-      console.error('Failed to get signed URL for audio');
-      return;
-    }
-
-    this.audio = new Audio(signedUrl);
+    // Audio bucket is public — use the URL directly, no signed URL needed
+    this.audio = new Audio(url);
     this.isPlaying = false;
 
     // Reset UI
