@@ -92,6 +92,7 @@ class StashApp {
       };
 
       request.onerror = () => resolve(); // Fail silently
+      request.onblocked = () => resolve(); // Another tab has DB open — skip caching
     });
   }
 
